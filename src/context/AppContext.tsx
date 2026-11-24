@@ -13,8 +13,17 @@ interface AppContextType {
   setSelectedCourt: (court: Court | null) => void;
   bookingModalCourt: Court | null;
   setBookingModalCourt: (court: Court | null) => void;
+  detailsModalCourt: Court | null;
+  setDetailsModalCourt: (court: Court | null) => void;
   selectedSportFilter: SportCategory;
   setSelectedSportFilter: (sport: SportCategory) => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+
+  // Favorites
+  favorites: string[];
+  toggleFavorite: (courtId: string) => void;
+  isFavorite: (courtId: string) => boolean;
   
   // Bookings
   bookings: Booking[];
@@ -178,7 +187,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeTab, setActiveTab] = useState<string>('home');
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const [bookingModalCourt, setBookingModalCourt] = useState<Court | null>(null);
+  const [detailsModalCourt, setDetailsModalCourt] = useState<Court | null>(null);
   const [selectedSportFilter, setSelectedSportFilter] = useState<SportCategory>('All');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('cad_favorites');
+      return saved ? JSON.parse(saved) : ['lpu-shanti-badminton', 'lpu-bh4-basketball'];
+    } catch {
+      return ['lpu-shanti-badminton', 'lpu-bh4-basketball'];
+    }
+  });
+
+  const toggleFavorite = (courtId: string) => {
+    setFavorites(prev => {
+      const next = prev.includes(courtId)
+        ? prev.filter(id => id !== courtId)
+        : [...prev, courtId];
+      try {
+        localStorage.setItem('cad_favorites', JSON.stringify(next));
+      } catch (e) {
+        console.error('Failed to save favorites to localStorage', e);
+      }
+      return next;
+    });
+  };
+
+  const isFavorite = (courtId: string) => favorites.includes(courtId);
 
   const [bookings, setBookings] = useState<Booking[]>(() => {
     const saved = localStorage.getItem('cad_bookings');
@@ -343,8 +379,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedCourt,
         bookingModalCourt,
         setBookingModalCourt,
+        detailsModalCourt,
+        setDetailsModalCourt,
         selectedSportFilter,
         setSelectedSportFilter,
+        searchQuery,
+        setSearchQuery,
+        favorites,
+        toggleFavorite,
+        isFavorite,
         bookings,
         addBooking,
         cancelBooking,

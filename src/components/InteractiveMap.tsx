@@ -1,22 +1,28 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Court } from '../types';
+import { useApp } from '../context/AppContext';
 import { LPU_COMMON_ORIGINS } from '../data/lpuCourts';
 import L from 'leaflet';
 import { Navigation, ExternalLink, Clock, MapPin, Footprints, ShieldAlert, Layers } from 'lucide-react';
 
 interface InteractiveMapProps {
-  courts: Court[];
-  selectedCourt: Court | null;
-  onSelectCourt: (court: Court) => void;
-  onBookCourt: (court: Court) => void;
+  courts?: Court[];
+  selectedCourt?: Court | null;
+  onSelectCourt?: (court: Court) => void;
+  onBookCourt?: (court: Court) => void;
 }
 
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
-  courts,
-  selectedCourt,
-  onSelectCourt,
-  onBookCourt
+  courts: propsCourts,
+  selectedCourt: propsSelectedCourt,
+  onSelectCourt: propsOnSelectCourt,
+  onBookCourt: propsOnBookCourt
 }) => {
+  const context = useApp();
+  const courts = propsCourts || context.courts;
+  const selectedCourt = propsSelectedCourt !== undefined ? propsSelectedCourt : context.selectedCourt;
+  const onSelectCourt = propsOnSelectCourt || context.setSelectedCourt;
+  const onBookCourt = propsOnBookCourt || context.setBookingModalCourt;
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const tileLayerGroupRef = useRef<L.LayerGroup | null>(null);

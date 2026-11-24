@@ -15,7 +15,8 @@ import {
   AlertTriangle,
   X,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Heart
 } from 'lucide-react';
 import { InteractiveMap } from './InteractiveMap';
 
@@ -25,15 +26,19 @@ export const CourtFinder: React.FC = () => {
     selectedCourt, 
     setSelectedCourt, 
     setBookingModalCourt, 
+    setDetailsModalCourt,
     selectedSportFilter, 
     setSelectedSportFilter,
-    setActiveTab 
+    setActiveTab,
+    isFavorite,
+    toggleFavorite
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'indoor' | 'outdoor'>('all');
   const [floodlitOnly, setFloodlitOnly] = useState(false);
   const [availableOnly, setAvailableOnly] = useState(false);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [detailModalCourt, setDetailModalCourt] = useState<Court | null>(null);
 
   const sportsList: SportCategory[] = [
@@ -66,6 +71,8 @@ export const CourtFinder: React.FC = () => {
     if (floodlitOnly && court.lighting.type === 'Unlit') return false;
     // Available
     if (availableOnly && court.status !== 'available') return false;
+    // Favorites
+    if (favoritesOnly && !isFavorite(court.id)) return false;
 
     return true;
   });
@@ -194,6 +201,19 @@ export const CourtFinder: React.FC = () => {
               <CheckCircle2 className="w-3.5 h-3.5 text-electric-400" />
               Available Now
             </button>
+
+            {/* Favorites Only */}
+            <button
+              onClick={() => setFavoritesOnly(!favoritesOnly)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border transition-all ${
+                favoritesOnly
+                  ? 'bg-rose-500/20 text-rose-400 border-rose-500/40 font-semibold'
+                  : 'bg-dark-950 text-slate-400 border-slate-700 hover:text-slate-200'
+              }`}
+            >
+              <Heart className={`w-3.5 h-3.5 ${favoritesOnly ? 'fill-rose-400 text-rose-400' : 'text-slate-400'}`} />
+              Favorites Only
+            </button>
           </div>
         </div>
 
@@ -264,8 +284,22 @@ export const CourtFinder: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Status Badge */}
-                  <div className="absolute top-3 right-3">
+                  {/* Status Badge & Favorite Heart */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(court.id);
+                      }}
+                      aria-label="Toggle favorite"
+                      className={`p-1.5 rounded-full backdrop-blur-md transition-all ${
+                        isFavorite(court.id)
+                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                          : 'bg-dark-950/70 text-slate-300 hover:text-white border border-slate-700/60'
+                      }`}
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${isFavorite(court.id) ? 'fill-rose-400' : ''}`} />
+                    </button>
                     <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border backdrop-blur-md ${
                       court.status === 'available'
                         ? 'bg-neon-500/20 text-neon-400 border-neon-500/40'
@@ -344,7 +378,7 @@ export const CourtFinder: React.FC = () => {
                         View on Map
                       </button>
                       <button
-                        onClick={() => setDetailModalCourt(court)}
+                        onClick={() => setDetailsModalCourt(court)}
                         className="py-2 px-3 rounded-xl bg-slate-800/60 hover:bg-slate-700 text-slate-300 hover:text-white text-xs transition-colors border border-slate-700"
                       >
                         Details
