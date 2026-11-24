@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Court } from '../types';
 import { LPU_COMMON_ORIGINS } from '../data/lpuCourts';
 import L from 'leaflet';
-import { Navigation, ExternalLink, Clock, MapPin, Footprints, ShieldAlert } from 'lucide-react';
+import { Navigation, ExternalLink, Clock, MapPin, Footprints, ShieldAlert, Layers } from 'lucide-react';
 
 interface InteractiveMapProps {
   courts: Court[];
@@ -19,6 +19,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const tileLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const routeLineRef = useRef<L.Polyline | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
@@ -26,26 +27,22 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const [selectedOrigin, setSelectedOrigin] = useState(LPU_COMMON_ORIGINS[0]);
   const [walkingDistanceMeters, setWalkingDistanceMeters] = useState<number | null>(null);
   const [walkingMinutes, setWalkingMinutes] = useState<number | null>(null);
+  const [mapTheme, setMapTheme] = useState<'dark' | 'osm' | 'satellite'>('dark');
 
   // Initialize Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
     if (mapInstanceRef.current) return;
 
-    // LPU Coordinates
+    // LPU Campus Coordinates
     const map = L.map(mapContainerRef.current, {
       center: [31.2548, 75.7032],
       zoom: 15,
       zoomControl: true
     });
 
-    // Dark-themed tiles from CartoDB Dark Matter
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 19
-    }).addTo(map);
-
+    const tileGroup = L.layerGroup().addTo(map);
+    tileLayerGroupRef.current = tileGroup;
     mapInstanceRef.current = map;
 
     return () => {
@@ -53,6 +50,54 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       mapInstanceRef.current = null;
     };
   }, []);
+
+  // Update Tile Layers when mapTheme changes (No API Keys Required)
+  useEffect(() => {
+    const tileGroup = tileLayerGroupRef.current;
+    if (!tileGroup) return;
+
+    tileGroup.clearLayers();
+
+    if (mapTheme === 'dark') {
+      // 100% Free Esri Dark Canvas with no API key requirement
+      const baseLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: '&copy; OpenStreetMap contributors, Esri',
+          maxZoom: 19,
+          maxNativeZoom: 16
+        }
+      );
+      const labelsLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 19,
+          maxNativeZoom: 16
+        }
+      );
+      tileGroup.addLayer(baseLayer);
+      tileGroup.addLayer(labelsLayer);
+    } else if (mapTheme === 'osm') {
+      // Standard OpenStreetMap (Public & Free)
+      const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        subdomains: ['a', 'b', 'c'],
+        maxZoom: 19
+      });
+      tileGroup.addLayer(osmLayer);
+    } else if (mapTheme === 'satellite') {
+      // Free Esri Satellite Imagery
+      const satLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+          maxZoom: 19,
+          maxNativeZoom: 18
+        }
+      );
+      tileGroup.addLayer(satLayer);
+    }
+  }, [mapTheme]);
 
   // Update Court Markers
   useEffect(() => {
@@ -64,7 +109,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     markersRef.current = {};
 
     courts.forEach(court => {
-      // Custom HTML pin icon
       const isSelected = selectedCourt?.id === court.id;
       const statusColor = 
         court.status === 'available' ? '#10b981' : 
@@ -168,7 +212,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       // Calculate straight-line distance with 1.25 pedestrian path factor
       const distM = Math.round(L.latLng(originCoords).distanceTo(L.latLng(courtCoords)) * 1.25);
       setWalkingDistanceMeters(distM);
-      // Average walking speed: 80 meters/min (~4.8 km/h)
       setWalkingMinutes(Math.max(1, Math.round(distM / 80)));
     } else {
       if (routeLineRef.current) routeLineRef.current.remove();
@@ -197,15 +240,13 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Starting Location Picker */}
+      {/* Starting Location Picker & Map Theme Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-dark-900/90 border border-slate-800">
         <div className="flex items-center gap-2">
           <Footprints className="w-4 h-4 text-electric-400" />
           <span className="text-xs font-semibold text-slate-200">
             Select Your Campus Location:
           </span>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
           <select
             value={selectedOrigin.name}
             onChange={(e) => {
@@ -220,9 +261,37 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               </option>
             ))}
           </select>
-          <span className="text-[11px] text-slate-400 hidden md:inline">
-            (Calculates live campus walking distance & time)
+        </div>
+
+        {/* Map Theme Toggle (Free & No API Key Required) */}
+        <div className="flex items-center gap-1.5 bg-dark-950 p-1 rounded-xl border border-slate-700 text-xs self-start sm:self-auto">
+          <span className="text-[10px] text-slate-500 uppercase px-2 font-mono flex items-center gap-1">
+            <Layers className="w-3 h-3 text-electric-400" /> Layer:
           </span>
+          <button
+            onClick={() => setMapTheme('dark')}
+            className={`px-2.5 py-1 rounded-lg text-xs transition-colors ${
+              mapTheme === 'dark' ? 'bg-electric-500 text-dark-950 font-bold' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Night Dark
+          </button>
+          <button
+            onClick={() => setMapTheme('osm')}
+            className={`px-2.5 py-1 rounded-lg text-xs transition-colors ${
+              mapTheme === 'osm' ? 'bg-electric-500 text-dark-950 font-bold' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            OpenStreet
+          </button>
+          <button
+            onClick={() => setMapTheme('satellite')}
+            className={`px-2.5 py-1 rounded-lg text-xs transition-colors ${
+              mapTheme === 'satellite' ? 'bg-electric-500 text-dark-950 font-bold' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Satellite
+          </button>
         </div>
       </div>
 
