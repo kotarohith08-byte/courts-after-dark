@@ -180,8 +180,19 @@ const INITIAL_REPORTS: MaintenanceReport[] = [
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [courts, setCourts] = useState<Court[]>(() => {
-    const saved = localStorage.getItem('cad_courts');
-    return saved ? JSON.parse(saved) : LPU_COURTS_DATA;
+    try {
+      const saved = localStorage.getItem('cad_courts');
+      if (!saved) return LPU_COURTS_DATA;
+      const parsed: Court[] = JSON.parse(saved);
+      return LPU_COURTS_DATA.map(fresh => {
+        const existing = parsed.find(p => p.id === fresh.id);
+        return existing 
+          ? { ...fresh, status: existing.status, lighting: { ...fresh.lighting, status: existing.lighting.status } } 
+          : fresh;
+      });
+    } catch {
+      return LPU_COURTS_DATA;
+    }
   });
 
   const [activeTab, setActiveTab] = useState<string>('home');
