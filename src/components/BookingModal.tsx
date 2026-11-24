@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Court, Booking } from '../types';
 import confetti from 'canvas-confetti';
@@ -18,7 +18,7 @@ import {
 export const BookingModal: React.FC = () => {
   const { bookingModalCourt, setBookingModalCourt, courts, addBooking } = useApp();
 
-  const [selectedCourtId, setSelectedCourtId] = useState<string>(bookingModalCourt?.id || courts[0]?.id || '');
+  const [selectedCourtId, setSelectedCourtId] = useState<string>(bookingModalCourt?.id || '');
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     return new Date().toISOString().split('T')[0];
   });
@@ -32,9 +32,28 @@ export const BookingModal: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
 
-  if (!bookingModalCourt && !selectedCourtId) return null;
+  // Sync selected court when modal opens with a specific court
+  useEffect(() => {
+    if (bookingModalCourt) {
+      setSelectedCourtId(bookingModalCourt.id);
+    }
+  }, [bookingModalCourt]);
 
-  const currentCourt = courts.find(c => c.id === (bookingModalCourt?.id || selectedCourtId)) || courts[0];
+  // Handle Escape key to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && bookingModalCourt) {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [bookingModalCourt]);
+
+  // If no court is being booked, do not render the modal
+  if (!bookingModalCourt) return null;
+
+  const currentCourt = courts.find(c => c.id === selectedCourtId) || bookingModalCourt;
 
   const availableSlots = [
     '06:00 AM – 07:00 AM',
@@ -99,8 +118,14 @@ export const BookingModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark-950/85 backdrop-blur-md animate-in fade-in">
-      <div className="bg-dark-900 border border-slate-700/80 rounded-3xl max-w-xl w-full max-h-[92vh] overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-6">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark-950/85 backdrop-blur-md animate-in fade-in"
+      onClick={handleClose}
+    >
+      <div 
+        className="bg-dark-900 border border-slate-700/80 rounded-3xl max-w-xl w-full max-h-[92vh] overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
           <div>
@@ -113,8 +138,10 @@ export const BookingModal: React.FC = () => {
             </h2>
           </div>
           <button
+            type="button"
             onClick={handleClose}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+            aria-label="Close modal"
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -193,6 +220,7 @@ export const BookingModal: React.FC = () => {
             </div>
 
             <button
+              type="button"
               onClick={handleClose}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-electric-500 to-neon-500 text-dark-950 font-bold text-xs uppercase tracking-wider hover:brightness-110 shadow-glow-blue transition-all font-['Space_Grotesk']"
             >
@@ -215,7 +243,7 @@ export const BookingModal: React.FC = () => {
                 Sports Court / Venue
               </label>
               <select
-                value={currentCourt.id}
+                value={selectedCourtId}
                 onChange={(e) => setSelectedCourtId(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-dark-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-electric-400"
               >
