@@ -432,6 +432,9 @@ export const Hero: React.FC = () => {
                       <img 
                         src={court.photos[0]} 
                         alt={court.name}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=600&q=80';
+                        }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <button
@@ -559,6 +562,9 @@ export const Hero: React.FC = () => {
                     <img 
                       src={activeMapCourt.photos[0]} 
                       alt={activeMapCourt.name}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=600&q=80';
+                      }}
                       className="w-full h-full object-cover" 
                     />
                     <div className="absolute top-1 right-1 text-[10px] font-bold text-neon-400 bg-dark-950/80 px-1.5 py-0.5 rounded-full border border-neon-500/30 flex items-center gap-1">

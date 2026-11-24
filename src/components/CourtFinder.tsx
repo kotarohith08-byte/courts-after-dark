@@ -269,6 +269,9 @@ export const CourtFinder: React.FC = () => {
                   <img
                     src={court.photos[0]}
                     alt={court.name}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=600&q=80';
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
@@ -453,6 +456,9 @@ export const CourtFinder: React.FC = () => {
               <img
                 src={detailModalCourt.photos[0]}
                 alt={detailModalCourt.name}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=600&q=80';
+                }}
                 className="w-full h-56 object-cover"
               />
             </div>

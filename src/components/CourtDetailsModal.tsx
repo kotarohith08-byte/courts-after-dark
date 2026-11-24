@@ -70,6 +70,9 @@ export const CourtDetailsModal: React.FC = () => {
           <img 
             src={photos[photoIndex]} 
             alt={`${court.name} - View ${photoIndex + 1}`}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80';
+            }}
             className="w-full h-full object-cover brightness-90 transition-all duration-300"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/40 to-transparent" />
@@ -163,7 +166,14 @@ export const CourtDetailsModal: React.FC = () => {
                     : 'border-slate-800 opacity-60 hover:opacity-100'
                 }`}
               >
-                <img src={url} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                <img 
+                  src={url} 
+                  alt={`Thumbnail ${idx + 1}`} 
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=600&q=80';
+                  }}
+                  className="w-full h-full object-cover" 
+                />
               </button>
             ))}
           </div>
